@@ -107,27 +107,14 @@ In movies and episodes: ◀ / ▶ skip back 10 s / forward 30 s, OK shows the co
 On phones: tap to show info, swipe up/down to change channel, long-press a channel for its
 info and catch-up.
 
-## Building the APK
+## Download
 
-### Option A — let GitHub build it (no software to install)
+Get the latest APKs from the [**Releases**](https://github.com/Nervous-Panda/TVDeck/releases/latest) page:
 
-1. Create a free account at github.com and create a new **private** repository.
-2. Upload the contents of this folder (keep the hidden `.github` folder) — either with
-   "Add file → Upload files" or with git.
-3. Open the **Actions** tab. The "Build APK" workflow runs automatically on every upload
-   (or press **Run workflow**). It takes about 5 minutes.
-4. Open the finished run and download **TVDeck-apk** under *Artifacts*. Unzip it to get
-   `standard/release/app-standard-release.apk` (TV boxes and phones) and
-   `car/release/app-car-release.apk` (phone + Android Auto, see below).
-
-### Option B — Android Studio
-
-1. Install Android Studio (free) and open this folder.
-2. Wait for Gradle sync to finish. In **Build → Select Build Variant**, set the app to **standardRelease** (or **carRelease**):
-   debug builds run noticeably slower, so use them only for development.
-3. Choose **Build → Build App Bundle(s) / APK(s) → Build APK(s)**.
-4. The APK is at `app/build/outputs/apk/standard/release/app-standard-release.apk`
-   (or `car/release/app-car-release.apk`).
+| File | For |
+|---|---|
+| `TVDeck-<version>.apk` | Android TV boxes, phones and tablets |
+| `TVDeck-Car-<version>.apk` | Phones, with the Android Auto screen (see [In the car](#in-the-car-android-auto-experimental)) |
 
 ## Installing on your devices
 
@@ -144,7 +131,7 @@ provider, and press **Save & connect**.
 
 ## In the car (Android Auto, experimental)
 
-The **car** APK (`app-car-release.apk`, shown as *TVDeck Car*) is the normal phone app plus a screen on
+The **car** APK (`TVDeck-Car-<version>.apk`, shown as *TVDeck Car*) is the normal phone app plus a screen on
 the Android Auto display: pick a group (Favorites first), tap a channel, and it plays on the car screen.
 Tap the video for the channel name, ▲ ▼ to change channel and ← to go back. It installs next to the
 normal app; set up your provider in it on the phone first.
