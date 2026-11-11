@@ -7,6 +7,31 @@ gives you Live TV with a TV guide, Movies, Series and catch-up. It works with a 
 TVDeck doesn't include any channels or streams. It plays whatever your own IPTV subscription
 or playlist provides.
 
+## Screenshots
+
+![Live TV](docs/screenshots/live-tv.png)
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/tv-guide.png" alt="TV guide"><br><sub><b>TV Guide</b>: channels down the side, 26 hours across</sub></td>
+    <td width="50%"><img src="docs/screenshots/player.jpg" alt="Live player"><br><sub><b>Player</b>: now/next banner over the live stream</sub></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/movies.png" alt="Movies"><br><sub><b>Movies</b>: poster grid by category</sub></td>
+    <td><img src="docs/screenshots/movie-details.png" alt="Movie details"><br><sub><b>Movie details</b>: plot, cast, rating</sub></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/series-details.png" alt="Series details"><br><sub><b>Series</b>: seasons and episodes</sub></td>
+    <td><img src="docs/screenshots/player-channel-list.jpg" alt="Channel list in the player"><br><sub><b>Channel list</b> without leaving the player</sub></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/settings.png" alt="Settings"><br><sub><b>Settings</b>: account expiry, connections, refresh</sub></td>
+    <td><img src="docs/screenshots/add-profile.png" alt="Add a profile"><br><sub><b>First run</b>: Xtream Codes or M3U</sub></td>
+  </tr>
+</table>
+
+<sub>Screenshots use a made-up demo provider: the channels, programmes, movies and series are fictional.</sub>
+
 ## Features
 
 - **Two connection types**
@@ -158,6 +183,8 @@ Built with Kotlin, Jetpack Compose, Media3 ExoPlayer, OkHttp and Coil. Minimum A
   Fermata repository, and the car build's manifest uses the same declarations.
 - `aauto.aar` is Google's unofficial Android Auto SDK. It is not covered by TVDeck's license and
   remains the property of its owners.
+- The video in the player screenshots is from *Big Buck Bunny* (© Blender Foundation,
+  [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/)).
 
 ## License
 
