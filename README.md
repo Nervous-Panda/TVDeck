@@ -152,6 +152,7 @@ Built with Kotlin, Jetpack Compose, Media3 ExoPlayer, OkHttp and Coil. Minimum A
 
 ## Credits
 
+- Co-developed with [Claude](https://claude.ai) by Anthropic.
 - [Fermata](https://github.com/AndreyPavlenko/Fermata) by Andrey Pavlenko (GPL-3.0). TVDeck's
   Android Auto support follows Fermata Auto's approach: `app/libs/aauto.aar` is taken from the
   Fermata repository, and the car build's manifest uses the same declarations.
