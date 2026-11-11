@@ -149,3 +149,20 @@ Built with Kotlin, Jetpack Compose, Media3 ExoPlayer, OkHttp and Coil. Minimum A
 - Release builds are signed with the debug key so they install directly. If you ever publish
   the app, set up your own signing key.
 - Profiles (including passwords) are stored only on the device, in the app's private storage.
+
+## Credits
+
+- [Fermata](https://github.com/AndreyPavlenko/Fermata) by Andrey Pavlenko (GPL-3.0). TVDeck's
+  Android Auto support follows Fermata Auto's approach: `app/libs/aauto.aar` is taken from the
+  Fermata repository, and the car build's manifest uses the same declarations.
+- `aauto.aar` is Google's unofficial Android Auto SDK. It is not covered by TVDeck's license and
+  remains the property of its owners.
+
+## License
+
+Copyright (C) 2026 Pedro Ferreira
+
+TVDeck is free software: you can redistribute it and/or modify it under the terms of the GNU
+General Public License as published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version. It is distributed in the hope that it will be
+useful, but WITHOUT ANY WARRANTY. See [LICENSE](LICENSE) for the full text.
