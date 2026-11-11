@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Merged into the main manifest for the "car" build only. Same declarations Fermata Auto uses. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <!-- Fermata Auto declares this; sideloaded installs ignore it, so it doesn't stop the app installing on a phone. -->
+    <uses-feature
+        android:name="android.hardware.type.automotive"
+        android:required="true" />
+
+    <application
+        android:label="TVDeck Car"
+        tools:replace="android:label">
+
+        <!-- Tells Android Auto this app has its own screen on the car display ("projection"). -->
+        <meta-data
+            android:name="com.google.android.gms.car.application"
+            android:resource="@xml/automotive_app_desc" />
+        <meta-data
+            android:name="com.google.android.gms.car.application.theme"
+            android:resource="@style/Theme.TVDeck" />
+        <meta-data
+            android:name="com.google.android.gms.car.notification.SmallIcon"
+            android:resource="@drawable/ic_launcher" />
+
+        <service
+            android:name=".car.CarService"
+            android:exported="true"
+            android:label="TVDeck"
+            android:icon="@drawable/ic_launcher"
+            tools:ignore="ExportedService">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="com.google.android.gms.car.category.CATEGORY_PROJECTION" />
+                <category android:name="com.google.android.gms.car.category.CATEGORY_PROJECTION_OEM" />
+            </intent-filter>
+        </service>
+    </application>
+</manifest>

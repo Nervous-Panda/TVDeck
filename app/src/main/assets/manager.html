@@ -1,0 +1,846 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TVDeck manager</title>
+<link rel="icon" href="data:,">
+<style>
+  :root { --bg:#0b0e13; --panel:#141922; --alt:#1d2430; --text:#e8ecf2; --dim:#9aa4b2; --accent:#4c8dff; --bad:#e5484d; --good:#3fb97f; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:16px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif; }
+  main { max-width:720px; margin:0 auto; padding:16px 16px 96px; }
+  h1 { font-size:22px; margin:8px 0 2px; color:var(--accent); }
+  h2 { font-size:17px; margin:20px 0 8px; }
+  .dim { color:var(--dim); font-size:14px; }
+  .err { color:var(--bad); font-size:14px; min-height:20px; margin-top:8px; }
+  input[type=text], input[type=search], input[type=password], input[type=url], input[inputmode] { width:100%; padding:12px; font-size:16px; border-radius:8px; border:1px solid var(--alt); background:var(--panel); color:var(--text); }
+  button { padding:10px 14px; font-size:14px; border:0; border-radius:8px; background:var(--alt); color:var(--text); cursor:pointer; }
+  button.on { background:var(--accent); color:#fff; }
+  button.danger { background:transparent; color:var(--bad); }
+  button:disabled { opacity:.5; cursor:default; }
+  .row { display:flex; gap:8px; flex-wrap:wrap; margin:12px 0; }
+  .tabs { position:sticky; top:0; background:var(--bg); padding:8px 0; margin:8px 0 4px; z-index:1; }
+  .tabs button { flex:1; min-width:80px; }
+  .item { display:flex; align-items:center; gap:10px; background:var(--panel); border-radius:8px; margin-bottom:4px; padding:4px 10px; }
+  .item label { flex:1; display:flex; align-items:center; gap:10px; padding:8px 0; min-width:0; cursor:pointer; }
+  .item .name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .item input { width:20px; height:20px; flex:none; accent-color:var(--accent); }
+  .count { color:var(--dim); font-size:13px; flex:none; }
+  .sub { margin:0 0 8px 24px; }
+  .sub .item { background:var(--alt); }
+  .status { background:var(--panel); border-radius:10px; padding:12px 14px; margin-top:8px; }
+  .status .title { font-weight:600; }
+  .status.bad { border-left:4px solid var(--bad); }
+  .status.ok { border-left:4px solid var(--good); }
+  .status.wait { border-left:4px solid var(--accent); }
+  .card { background:var(--panel); border-radius:10px; padding:12px 14px; margin-bottom:8px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .card .info { flex:1; min-width:160px; }
+  .card .name { font-weight:600; overflow-wrap:anywhere; }
+  .badge { display:inline-block; font-size:11px; font-weight:700; letter-spacing:.04em; background:var(--accent); color:#fff; border-radius:4px; padding:1px 6px; margin-left:6px; vertical-align:middle; }
+  .actions { display:flex; gap:6px; flex-wrap:wrap; }
+  form.editor { background:var(--panel); border-radius:10px; padding:14px; margin:8px 0 16px; }
+  form.editor label.field { display:block; margin:10px 0 4px; font-size:13px; color:var(--dim); }
+  form.editor input[type=text], form.editor input[type=password], form.editor input[type=url] { background:var(--bg); }
+  .check { display:flex; align-items:center; gap:8px; margin-top:12px; font-size:14px; }
+  .check input { width:18px; height:18px; accent-color:var(--accent); }
+  .panel { background:var(--panel); border-radius:10px; padding:12px 14px; margin-bottom:12px; }
+  select { width:100%; padding:12px; font-size:16px; border-radius:8px; border:1px solid var(--alt); background:var(--panel); color:var(--text); }
+  .move { padding:6px 10px; min-width:36px; flex:none; }
+  .item input.rename { flex:1; min-width:0; width:auto; height:auto; padding:8px; font-size:15px; border-radius:6px; border:1px solid var(--alt); background:var(--bg); color:var(--text); }
+  .status .warn { color:var(--bad); }
+  h3 { font-size:15px; margin:16px 0 8px; }
+  .pick { display:flex; align-items:center; gap:8px; background:var(--alt); border-radius:8px; margin-bottom:4px; padding:6px 10px; }
+  .pick .info { flex:1; min-width:0; }
+  .pick .name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .pick .sub2 { color:var(--dim); font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .pick button { flex:none; }
+  .order { color:var(--accent); font-weight:700; width:18px; flex:none; }
+  footer { position:fixed; left:0; right:0; bottom:0; background:var(--panel); border-top:1px solid var(--alt); padding:12px 16px; }
+  footer div { max-width:720px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  [hidden] { display:none !important; }
+</style>
+</head>
+<body>
+<main>
+  <h1>TVDeck manager</h1>
+
+  <form id="login">
+    <p class="dim">Enter the PIN shown on your TV.</p>
+    <input id="pin" inputmode="numeric" autocomplete="off" maxlength="6" aria-label="PIN">
+    <div class="row"><button class="on" type="submit">Continue</button></div>
+    <div class="err" id="loginErr"></div>
+  </form>
+
+  <div id="app" hidden>
+    <div class="status" id="status"></div>
+    <div class="row tabs" id="tabs"></div>
+
+    <!-- Provider -->
+    <section id="providerTab">
+      <div id="profiles"></div>
+      <div class="row"><button class="on" id="add" type="button">+ Add provider</button></div>
+
+      <div id="autoBox" hidden>
+        <h2>Automatic refresh</h2>
+        <p class="dim">While TVDeck is open, the TV downloads channels, movies, series and the guide again in the background. It waits while you're watching.</p>
+        <select id="autoRefresh" aria-label="Automatic refresh">
+          <option value="24">Daily</option>
+          <option value="12">Every 12 hours</option>
+          <option value="6">Every 6 hours</option>
+          <option value="0">Off</option>
+        </select>
+        <p class="dim" id="lastRefresh"></p>
+      </div>
+
+      <form class="editor" id="editor" hidden autocomplete="off">
+        <h2 id="editorTitle" style="margin-top:0">Add provider</h2>
+        <div class="row" style="margin-top:0">
+          <button type="button" id="typeXtream">Xtream Codes</button>
+          <button type="button" id="typeM3u">M3U playlist</button>
+        </div>
+        <label class="field" for="fName">Name (optional)</label>
+        <input type="text" id="fName" placeholder="e.g. My provider">
+        <label class="field" for="fUrl" id="fUrlLabel">Server URL</label>
+        <input type="url" id="fUrl" autocapitalize="off" spellcheck="false">
+        <div id="xtreamFields">
+          <label class="field" for="fUser">Username</label>
+          <input type="text" id="fUser" autocapitalize="off" spellcheck="false">
+          <label class="field" for="fPass">Password</label>
+          <input type="password" id="fPass" autocomplete="new-password">
+          <label class="field">Live stream format</label>
+          <div class="row" style="margin-top:0">
+            <button type="button" id="fmtTs">MPEG-TS (default)</button>
+            <button type="button" id="fmtHls">HLS (m3u8)</button>
+          </div>
+        </div>
+        <label class="field" for="fEpg" id="fEpgLabel">TV guide URL (optional)</label>
+        <input type="url" id="fEpg" autocapitalize="off" spellcheck="false">
+        <label class="field" for="fUa">Custom User-Agent (optional)</label>
+        <input type="text" id="fUa" autocapitalize="off" spellcheck="false">
+        <label class="check" id="activateRow"><input type="checkbox" id="fActivate" checked> Use this provider on the TV now</label>
+        <div class="err" id="editorErr"></div>
+        <div class="row">
+          <button class="on" type="submit" id="editorSave">Save</button>
+          <button type="button" id="editorCancel">Cancel</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- Live TV / Movies / Series -->
+    <section id="contentTab" hidden>
+      <p class="dim" id="contentMsg" hidden></p>
+      <div id="contentBody">
+        <input id="q" type="search" placeholder="Search groups" aria-label="Search groups">
+        <div class="row">
+          <button id="allOn" type="button">Turn shown on</button>
+          <button id="allOff" type="button">Turn shown off</button>
+          <button id="editLayout" type="button">Edit order &amp; names</button>
+          <button id="combineBtn" type="button">Combine channels</button>
+        </div>
+        <div class="panel" id="combinePanel" hidden>
+          <h2 style="margin-top:0">Combine channels</h2>
+          <p class="dim">Pick two or more channels that show the same thing, like DAZN 1 and DAZN Sports 1. They become one channel: the first one plays, and if it stops working the next one takes over.</p>
+          <input id="cq" type="search" placeholder="Search channels, e.g. DAZN" aria-label="Search channels to combine">
+          <div id="cresults"></div>
+          <div id="cpickedBox" hidden>
+            <h3>Combine, in this order</h3>
+            <div id="cpicked"></div>
+            <div class="row" style="margin-bottom:0">
+              <button class="on" id="doCombine" type="button">Combine</button>
+              <button id="clearPicked" type="button">Clear</button>
+            </div>
+          </div>
+          <div class="err" id="combineErr"></div>
+          <div id="combosBox" hidden>
+            <h3>Your combined channels</h3>
+            <div id="combos"></div>
+          </div>
+        </div>
+        <div class="panel" id="layoutPanel" hidden>
+          <p class="dim" style="margin-top:0">Move groups and channels with ▲ ▼. Open a group's channels to move or rename them; clear a name to go back to the provider's.</p>
+          <label class="check" style="margin-top:0"><input type="checkbox" id="renumber"> Number channels in this order (1, 2, 3…)</label>
+          <div class="row" style="margin-bottom:0"><button class="danger" id="resetLayout" type="button">Reset order &amp; names</button></div>
+        </div>
+        <div id="list"></div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer id="bar" hidden>
+  <div>
+    <span class="dim" id="summary"></span>
+    <button class="on" id="save" type="button">Save &amp; apply</button>
+  </div>
+</footer>
+
+<script>
+var pin = '';
+var st = null;          // last /api/state reply
+var data = null;        // groups of the active provider, edited locally until saved
+var dataFor = null;     // profile id the groups belong to
+var tab = null;
+var labels = { provider: 'Provider', live: 'Live TV', movies: 'Movies', series: 'Series' };
+var hide = {}, show = {}, open = {};
+var dirty = false;
+var poll = null;
+var editing = null;     // profile being edited, or {} for a new one
+// Channel order & names (Live TV), edited locally until saved.
+var editMode = false;
+var chans = {};         // group -> channels in their current order, as loaded from the TV
+var names = {};         // channel key -> new name ('' = back to the provider's)
+var movedChannels = {}; // group -> true when its channel order changed
+var movedGroups = false;
+var renumber = false, renumberChanged = false;
+var fType = 'XTREAM', fFormat = 'ts';
+
+function $(id) { return document.getElementById(id); }
+
+function api(path, options) {
+  options = options || {};
+  options.headers = { 'X-Pin': pin };
+  return fetch(path, options).then(function (r) {
+    if (r.status === 401) { var e = new Error('pin'); e.pin = true; throw e; }
+    return r.json().catch(function () { return {}; }).then(function (j) {
+      if (!r.ok) throw new Error(j.error || ('HTTP ' + r.status));
+      return j;
+    });
+  });
+}
+
+function post(path, body) { return api(path, { method: 'POST', body: JSON.stringify(body) }); }
+
+function el(tag, cls, text) {
+  var e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text !== undefined) e.textContent = text;
+  return e;
+}
+
+function button(text, cls, onclick) {
+  var b = el('button', cls, text);
+  b.type = 'button';
+  b.onclick = onclick;
+  return b;
+}
+
+function showLogin(message) {
+  clearTimeout(poll);
+  $('app').hidden = true;
+  $('bar').hidden = true;
+  $('login').hidden = false;
+  $('loginErr').textContent = message;
+}
+
+function failed(e) {
+  if (e.pin) showLogin('Wrong PIN. Check the TV, as it changes after too many wrong tries.');
+  else showLogin('Could not reach the TV. Is the manager screen still open?');
+}
+
+// ---------- State ----------
+
+function refresh(reloadGroups) {
+  clearTimeout(poll);
+  return api('/api/state').then(function (s) {
+    st = s;
+    $('login').hidden = true;
+    $('app').hidden = false;
+    if (s.status === 'ready') {
+      if (reloadGroups || !data || dataFor !== s.activeId) {
+        data = { live: s.live, movies: s.movies, series: s.series };
+        data.live.forEach(function (g) { g.loaded = g.on; });
+        dataFor = s.activeId;
+        hide = {}; show = {}; open = {};
+        chans = {}; names = {}; movedChannels = {}; movedGroups = false;
+        renumber = !!s.renumber; renumberChanged = false;
+        dirty = false;
+      }
+    } else {
+      data = null;
+      dataFor = null;
+      if (s.status === 'loading') poll = setTimeout(function () { refresh(false).catch(failed); }, 1500);
+    }
+    if (!tab) tab = s.status === 'ready' ? 'live' : 'provider';
+    if (!s.profiles.length && !editing) startEdit(null);
+    render();
+  });
+}
+
+function activeProfile() {
+  if (!st) return null;
+  for (var i = 0; i < st.profiles.length; i++) if (st.profiles[i].active) return st.profiles[i];
+  return null;
+}
+
+// ---------- Rendering ----------
+
+function render() {
+  renderStatus();
+  renderTabs();
+  var isProvider = tab === 'provider';
+  $('providerTab').hidden = !isProvider;
+  $('contentTab').hidden = isProvider;
+  if (isProvider) {
+    renderProfiles();
+    $('bar').hidden = true;
+  } else {
+    renderContent();
+  }
+}
+
+function renderStatus() {
+  var box = $('status');
+  box.textContent = '';
+  var p = activeProfile();
+  var title, detail, cls;
+  if (!p) {
+    cls = 'wait';
+    title = st.profiles.length ? 'No provider selected' : 'No provider yet';
+    detail = st.profiles.length ? 'Choose one below with "Use on TV".' : 'Add your IPTV provider below to get started.';
+  } else if (st.status === 'ready') {
+    cls = 'ok';
+    title = p.name;
+    detail = 'Connected · ' + count('live', 'live group') + ' · ' + count('movies', 'movie group') + ' · ' + count('series', 'series group');
+  } else if (st.status === 'error') {
+    cls = 'bad';
+    title = p.name;
+    detail = 'The TV could not load this provider: ' + st.message;
+  } else {
+    cls = 'wait';
+    title = p.name;
+    detail = st.message || 'Loading…';
+  }
+  box.className = 'status ' + cls;
+  box.appendChild(el('div', 'title', title));
+  box.appendChild(el('div', 'dim', detail));
+  if (st.status === 'ready' && st.account) {
+    var a = accountText(st.account);
+    box.appendChild(el('div', a.warn ? 'dim warn' : 'dim', a.text));
+  }
+}
+
+function fmtDate(ms) { return new Date(ms).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }); }
+function fmtDateTime(ms) { return new Date(ms).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); }
+
+// Expiry and connections reported by an Xtream Codes provider.
+function accountText(a) {
+  var now = Date.now(), parts = [], warn = false;
+  if (a.status && a.status.toLowerCase() !== 'active') { parts.push('Account ' + a.status); warn = true; }
+  if (a.expiresAt === null) parts.push('No expiry date');
+  else {
+    var days = Math.floor((a.expiresAt - now) / 86400000);
+    if (a.expiresAt <= now) { parts.push('Expired on ' + fmtDate(a.expiresAt)); warn = true; }
+    else {
+      parts.push('Expires ' + fmtDate(a.expiresAt) + ' · ' + (days === 0 ? 'today' : days + (days === 1 ? ' day' : ' days') + ' left'));
+      if (days < 7) warn = true;
+    }
+  }
+  if (a.maxConnections !== null) parts.push((a.activeConnections || 0) + ' of ' + a.maxConnections + ' connections in use');
+  if (a.trial) parts.push('Trial');
+  return { text: parts.join(' · '), warn: warn };
+}
+
+function count(section, word) {
+  var n = data ? data[section].length : 0;
+  return n + ' ' + word + (n === 1 ? '' : 's');
+}
+
+function renderTabs() {
+  var tabs = $('tabs');
+  tabs.textContent = '';
+  Object.keys(labels).forEach(function (t) {
+    tabs.appendChild(button(labels[t], t === tab ? 'on' : '', function () {
+      if (t === tab) return;
+      tab = t;
+      $('q').value = '';
+      render();
+      window.scrollTo(0, 0);
+    }));
+  });
+}
+
+function typeLabel(t) { return t === 'M3U' ? 'M3U playlist' : 'Xtream Codes'; }
+
+function renderProfiles() {
+  var box = $('profiles');
+  box.textContent = '';
+  $('autoBox').hidden = !st.profiles.length;
+  $('autoRefresh').value = String(st.autoRefreshHours);
+  $('lastRefresh').textContent = st.lastRefresh ? 'Lists last downloaded ' + fmtDateTime(st.lastRefresh) + '.' : '';
+  if (!st.profiles.length) return;
+  box.appendChild(el('h2', '', 'Your providers'));
+  st.profiles.forEach(function (p) {
+    var card = el('div', 'card');
+    var info = el('div', 'info');
+    var name = el('div', 'name', p.name);
+    if (p.active) name.appendChild(el('span', 'badge', 'ON TV'));
+    info.appendChild(name);
+    info.appendChild(el('div', 'dim', typeLabel(p.type) + ' · ' + p.host + (p.username ? ' · ' + p.username : '')));
+    card.appendChild(info);
+    var actions = el('div', 'actions');
+    if (!p.active) actions.appendChild(button('Use on TV', 'on', function () { activate(p); }));
+    actions.appendChild(button('Edit', '', function () { startEdit(p); }));
+    actions.appendChild(button('Delete', 'danger', function () { remove(p); }));
+    card.appendChild(actions);
+    box.appendChild(card);
+  });
+}
+
+function renderContent() {
+  var msg = $('contentMsg');
+  var body = $('contentBody');
+  if (st.status !== 'ready' || !data) {
+    msg.hidden = false;
+    body.hidden = true;
+    $('bar').hidden = true;
+    if (!activeProfile()) msg.textContent = 'Add or choose a provider on the Provider tab first.';
+    else if (st.status === 'error') msg.textContent = 'The provider could not be loaded, so there are no groups to show. Check its details on the Provider tab.';
+    else msg.textContent = 'The TV is loading your provider. This page updates by itself.';
+    return;
+  }
+  msg.hidden = true;
+  body.hidden = false;
+  $('bar').hidden = false;
+  $('save').disabled = !dirty;
+  $('save').textContent = 'Save & apply';
+  $('q').placeholder = 'Search ' + labels[tab].toLowerCase() + ' groups';
+  renderGroups();
+}
+
+function shown() {
+  var q = $('q').value.trim().toLowerCase();
+  return data[tab].filter(function (g) { return g.name.toLowerCase().indexOf(q) >= 0; });
+}
+
+function touch() {
+  dirty = true;
+  $('save').disabled = false;
+  summary();
+}
+
+function summary() {
+  var g = data[tab];
+  var on = g.filter(function (x) { return x.on; }).length;
+  $('summary').textContent = labels[tab] + ': ' + on + ' of ' + g.length + ' groups on' + (dirty ? ' · unsaved' : '');
+}
+
+function swap(list, i, j) {
+  if (j < 0 || j >= list.length) return false;
+  var t = list[i]; list[i] = list[j]; list[j] = t;
+  return true;
+}
+
+function moveButtons(row, label, onUp, onDown) {
+  row.appendChild(button('▲', 'move', onUp)).setAttribute('aria-label', 'Move ' + label + ' up');
+  row.appendChild(button('▼', 'move', onDown)).setAttribute('aria-label', 'Move ' + label + ' down');
+}
+
+function renderGroups() {
+  var live = tab === 'live';
+  var layoutEdit = live && editMode;
+  $('editLayout').hidden = !live;
+  $('editLayout').className = layoutEdit ? 'on' : '';
+  $('editLayout').textContent = layoutEdit ? 'Done editing order' : 'Edit order & names';
+  $('layoutPanel').hidden = !layoutEdit;
+  $('renumber').checked = renumber;
+  renderCombine();
+  var list = $('list');
+  list.textContent = '';
+  var groups = shown();
+  if (!groups.length) list.appendChild(el('p', 'dim', data[tab].length ? 'No groups match.' : 'Your provider has none here.'));
+  groups.forEach(function (g) {
+    var row = el('div', 'item');
+    var label = el('label');
+    var box = el('input');
+    box.type = 'checkbox';
+    box.checked = g.on;
+    box.onchange = function () { g.on = box.checked; touch(); };
+    label.appendChild(box);
+    label.appendChild(el('span', 'name', g.name));
+    row.appendChild(label);
+    if (g.count !== null) row.appendChild(el('span', 'count', g.count));
+    list.appendChild(row);
+    if (layoutEdit) {
+      var i = data.live.indexOf(g);
+      moveButtons(row, g.name,
+        function () { if (swap(data.live, i, i - 1)) { movedGroups = true; touch(); renderGroups(); } },
+        function () { if (swap(data.live, i, i + 1)) { movedGroups = true; touch(); renderGroups(); } });
+    }
+    // The TV only holds channels for groups that were on when it last loaded.
+    if (live && g.on && g.loaded) {
+      row.appendChild(button(open[g.name] ? 'Hide' : 'Channels', '', function () { open[g.name] = !open[g.name]; renderGroups(); }));
+      if (open[g.name]) {
+        var sub = el('div', 'sub', 'Loading…');
+        list.appendChild(sub);
+        if (chans[g.name]) renderChannels(g.name, sub);
+        else loadChannels(g.name, sub);
+      }
+    }
+  });
+  summary();
+}
+
+function loadChannels(group, sub) {
+  api('/api/channels?group=' + encodeURIComponent(group)).then(function (list) {
+    chans[group] = list;
+    renderChannels(group, sub);
+  }).catch(function () { sub.textContent = 'Could not load the channels.'; });
+}
+
+function renderChannels(group, sub) {
+  var list = chans[group];
+  var layoutEdit = editMode && tab === 'live';
+  sub.textContent = '';
+  list.forEach(function (c, i) {
+    var row = el('div', 'item');
+    var label = el('label');
+    if (layoutEdit) label.style.flex = 'none';
+    var box = el('input');
+    box.type = 'checkbox';
+    box.checked = hide[c.key] ? false : (show[c.key] ? true : c.on);
+    box.setAttribute('aria-label', c.name);
+    box.onchange = function () {
+      delete hide[c.key]; delete show[c.key];
+      if (box.checked) show[c.key] = true; else hide[c.key] = true;
+      touch();
+    };
+    label.appendChild(box);
+    row.appendChild(label);
+    if (layoutEdit) {
+      var input = el('input', 'rename');
+      input.type = 'text';
+      input.value = c.name;
+      input.placeholder = c.providerName;
+      input.setAttribute('aria-label', 'Name for ' + c.providerName);
+      input.oninput = function () {
+        var v = input.value.trim();
+        c.name = v || c.providerName;
+        names[c.key] = v === c.providerName ? '' : v;
+        touch();
+      };
+      row.appendChild(input);
+      moveButtons(row, c.name,
+        function () { if (swap(list, i, i - 1)) { movedChannels[group] = true; touch(); renderChannels(group, sub); } },
+        function () { if (swap(list, i, i + 1)) { movedChannels[group] = true; touch(); renderChannels(group, sub); } });
+    } else {
+      var nm = el('span', 'name', c.name);
+      if (c.name !== c.providerName) nm.title = 'Provider name: ' + c.providerName;
+      label.appendChild(nm);
+      if (c.versions) {
+        var v = el('span', 'count', c.versions.length + ' versions');
+        v.title = (c.manual ? 'Combined by you: ' : 'Combined automatically: ') + c.versions.join(' + ');
+        row.appendChild(v);
+      }
+      row.appendChild(el('span', 'count', c.number));
+    }
+    sub.appendChild(row);
+  });
+}
+
+function layoutChanges() {
+  var l = {}, any = false;
+  if (movedGroups) { l.groups = data.live.map(function (g) { return g.name; }); any = true; }
+  var order = {};
+  Object.keys(movedChannels).forEach(function (g) { order[g] = chans[g].map(function (c) { return c.key; }); any = true; });
+  if (Object.keys(order).length) l.order = order;
+  if (Object.keys(names).length) { l.names = names; any = true; }
+  if (renumberChanged) { l.renumber = renumber; any = true; }
+  return any ? l : null;
+}
+
+// ---------- Combining channels ----------
+
+var combineOpen = false;
+var picked = [];       // channels chosen to combine, in the order to try them
+var searchTimer = null;
+
+function renderCombine() {
+  var live = tab === 'live';
+  $('combineBtn').hidden = !live;
+  $('combineBtn').className = combineOpen && live ? 'on' : '';
+  $('combinePanel').hidden = !(combineOpen && live);
+  if (!combineOpen || !live) return;
+  renderPicked();
+  renderCombos();
+}
+
+function pickRow(name, sub, order) {
+  var row = el('div', 'pick');
+  if (order) row.appendChild(el('span', 'order', order));
+  var info = el('div', 'info');
+  info.appendChild(el('div', 'name', name));
+  if (sub) info.appendChild(el('div', 'sub2', sub));
+  row.appendChild(info);
+  return row;
+}
+
+function isPicked(key) {
+  return picked.some(function (p) { return p.key === key; });
+}
+
+function searchChannels() {
+  var q = $('cq').value.trim();
+  var box = $('cresults');
+  if (q.length < 2) { box.textContent = ''; return; }
+  api('/api/search?q=' + encodeURIComponent(q)).then(function (list) {
+    if ($('cq').value.trim() !== q) return; // typed more since
+    box.textContent = '';
+    if (!list.length) box.appendChild(el('p', 'dim', 'No channels match.'));
+    list.forEach(function (c) {
+      var sub = c.group + ' · ' + c.number;
+      if (c.partOf) sub += c.partOf.manual ? ' · in your combination "' + c.partOf.name + '"' : ' · combined automatically (HD/FHD)';
+      var row = pickRow(c.name, sub);
+      if (c.partOf && !c.partOf.manual) {
+        row.appendChild(button('Split', '', function () { split(c.partOf.key, c.partOf.name); }));
+      }
+      var add = button(isPicked(c.key) ? 'Added' : 'Add', isPicked(c.key) ? '' : 'on', function () {
+        if (isPicked(c.key)) return;
+        picked.push({ key: c.key, name: c.name, group: c.group });
+        add.textContent = 'Added'; add.className = ''; add.disabled = true;
+        renderPicked();
+      });
+      add.disabled = isPicked(c.key);
+      add.setAttribute('aria-label', 'Add ' + c.name);
+      row.appendChild(add);
+      box.appendChild(row);
+    });
+  }).catch(function (e) { if (e.pin) failed(e); });
+}
+
+function renderPicked() {
+  var box = $('cpicked');
+  box.textContent = '';
+  $('cpickedBox').hidden = !picked.length;
+  picked.forEach(function (p, i) {
+    var row = pickRow(p.name, i === 0 ? p.group + ' · plays first' : p.group + ' · backup', String(i + 1));
+    row.appendChild(button('▲', 'move', function () { if (swap(picked, i, i - 1)) renderPicked(); })).setAttribute('aria-label', 'Move ' + p.name + ' up');
+    row.appendChild(button('▼', 'move', function () { if (swap(picked, i, i + 1)) renderPicked(); })).setAttribute('aria-label', 'Move ' + p.name + ' down');
+    row.appendChild(button('✕', 'move', function () { picked.splice(i, 1); renderPicked(); searchChannels(); })).setAttribute('aria-label', 'Remove ' + p.name);
+    box.appendChild(row);
+  });
+  $('doCombine').disabled = picked.length < 2;
+  $('doCombine').textContent = picked.length < 2 ? 'Pick one more' : 'Combine ' + picked.length + ' channels';
+}
+
+function renderCombos() {
+  var list = (st && st.combinations) || [];
+  var box = $('combos');
+  box.textContent = '';
+  $('combosBox').hidden = !list.length;
+  list.forEach(function (m) {
+    var names = m.versions.map(function (v) { return v.name; });
+    var sub = m.active ? 'Plays ' + names[0] + ' first' : 'Not active: some of these channels are switched off or no longer listed';
+    var row = pickRow(names.join(' + '), sub);
+    row.appendChild(button('Split', '', function () { split(m.key, names[0]); }));
+    box.appendChild(row);
+  });
+}
+
+function combine() {
+  if (picked.length < 2 || !confirmDiscard()) return;
+  $('combineErr').textContent = '';
+  $('doCombine').disabled = true;
+  post('/api/combine', { keys: picked.map(function (p) { return p.key; }) }).then(function () {
+    picked = [];
+    $('cq').value = '';
+    $('cresults').textContent = '';
+    return refresh(true);
+  }).catch(function (e) {
+    if (e.pin) return failed(e);
+    $('combineErr').textContent = e.message;
+    renderPicked();
+  });
+}
+
+function split(key, name) {
+  if (!confirm('Split "' + name + '" back into separate channels?') || !confirmDiscard()) return;
+  post('/api/split', { key: key }).then(function () {
+    $('cresults').textContent = '';
+    $('cq').value = '';
+    return refresh(true);
+  }).catch(function (e) {
+    if (e.pin) failed(e); else $('combineErr').textContent = e.message;
+  });
+}
+
+function resetLayout() {
+  if (!confirm('Go back to the provider\'s order, names and numbers for every channel?')) return;
+  movedGroups = false; movedChannels = {}; names = {}; renumberChanged = false;
+  save({ reset: true, renumber: false });
+}
+
+function setShown(on) {
+  shown().forEach(function (g) { g.on = on; });
+  touch();
+  renderGroups();
+}
+
+function off(list) {
+  return list.filter(function (g) { return !g.on; }).map(function (g) { return g.name; });
+}
+
+function save(layout) {
+  var btn = $('save');
+  btn.disabled = true;
+  btn.textContent = 'Applying…';
+  var body = {
+    live: off(data.live),
+    movies: off(data.movies),
+    series: off(data.series),
+    hideChannels: Object.keys(hide),
+    showChannels: Object.keys(show)
+  };
+  var l = layout || layoutChanges();
+  if (l) body.layout = l;
+  post('/api/apply', body).then(function () {
+    dirty = false;
+    $('summary').textContent = 'The TV is reloading…';
+    setTimeout(function () { refresh(true).catch(failed); }, 1000);
+  }).catch(function (e) {
+    btn.disabled = false;
+    btn.textContent = 'Save & apply';
+    $('summary').textContent = e.pin ? 'The PIN has changed. Reload this page.' : (e.message || 'Could not apply. Try again.');
+  });
+}
+
+// ---------- Provider editor ----------
+
+function confirmDiscard() {
+  return !dirty || confirm('You have unsaved group or channel changes. Discard them?');
+}
+
+function setType(t) {
+  fType = t;
+  $('typeXtream').className = t === 'XTREAM' ? 'on' : '';
+  $('typeM3u').className = t === 'M3U' ? 'on' : '';
+  $('xtreamFields').hidden = t !== 'XTREAM';
+  $('fUrlLabel').textContent = t === 'XTREAM' ? 'Server URL' : 'Playlist URL (M3U / M3U8)';
+  $('fEpgLabel').textContent = t === 'XTREAM' ? "TV guide URL (optional, overrides the provider's)" : 'TV guide / XMLTV URL (optional if the playlist includes one)';
+  updatePlaceholders();
+}
+
+function setFormat(f) {
+  fFormat = f;
+  $('fmtTs').className = f === 'ts' ? 'on' : '';
+  $('fmtHls').className = f === 'm3u8' ? 'on' : '';
+}
+
+// Saved secrets are never sent to this page, so a blank field keeps them.
+function updatePlaceholders() {
+  var keep = editing && editing.id && editing.type === fType;
+  $('fUrl').placeholder = fType === 'XTREAM' ? 'http://provider.com:8080'
+    : (keep ? 'Saved (' + editing.host + ') — leave blank to keep' : 'http://provider.com/get.php?…');
+  $('fPass').placeholder = keep && fType === 'XTREAM' ? 'Saved — leave blank to keep' : '';
+}
+
+function startEdit(p) {
+  editing = p || {};
+  $('editorTitle').textContent = p ? 'Edit ' + p.name : 'Add provider';
+  $('fName').value = p ? p.name : '';
+  $('fUrl').value = p ? p.url : '';
+  $('fUser').value = p ? p.username : '';
+  $('fPass').value = '';
+  $('fEpg').value = p ? p.epgUrl : '';
+  $('fUa').value = p ? p.userAgent : '';
+  setType(p ? p.type : 'XTREAM');
+  setFormat(p ? p.outputFormat : 'ts');
+  // Editing the active provider always reloads it; the first one is always used.
+  $('activateRow').hidden = !!(p && p.active) || !st || !st.profiles.length;
+  $('fActivate').checked = !p;
+  $('editorErr').textContent = '';
+  $('editorCancel').hidden = !st || !st.profiles.length;
+  $('editor').hidden = false;
+  $('add').hidden = true;
+  tab = 'provider';
+  if (st) render();
+  $('editor').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function stopEdit() {
+  editing = null;
+  $('editor').hidden = true;
+  $('add').hidden = false;
+}
+
+function submitEdit(e) {
+  e.preventDefault();
+  var reloads = (editing.active) || $('fActivate').checked || !st.profiles.length;
+  if (reloads && !confirmDiscard()) return;
+  var btn = $('editorSave');
+  btn.disabled = true;
+  $('editorErr').textContent = '';
+  post('/api/profile', {
+    id: editing.id || '',
+    type: fType,
+    name: $('fName').value,
+    url: $('fUrl').value,
+    username: $('fUser').value,
+    password: $('fPass').value,
+    outputFormat: fFormat,
+    epgUrl: $('fEpg').value,
+    userAgent: $('fUa').value,
+    activate: $('fActivate').checked
+  }).then(function () {
+    btn.disabled = false;
+    stopEdit();
+    return refresh(reloads);
+  }).catch(function (err) {
+    btn.disabled = false;
+    if (err.pin) return failed(err);
+    $('editorErr').textContent = err.message || 'Could not save. Try again.';
+  });
+}
+
+function activate(p) {
+  if (!confirmDiscard()) return;
+  post('/api/activate', { id: p.id }).then(function () { return refresh(true); }).catch(function (e) {
+    if (e.pin) failed(e); else alert(e.message);
+  });
+}
+
+function remove(p) {
+  if (!confirm('Delete "' + p.name + '" from the TV? Its favorites and channel choices are removed too.')) return;
+  post('/api/delete', { id: p.id }).then(function () {
+    if (editing && editing.id === p.id) stopEdit();
+    return refresh(p.active);
+  }).catch(function (e) {
+    if (e.pin) failed(e); else alert(e.message);
+  });
+}
+
+// ---------- Wiring ----------
+
+$('login').onsubmit = function (e) {
+  e.preventDefault();
+  pin = $('pin').value.trim();
+  $('loginErr').textContent = '';
+  refresh(true).catch(failed);
+};
+$('q').oninput = renderGroups;
+$('allOn').onclick = function () { setShown(true); };
+$('allOff').onclick = function () { setShown(false); };
+$('save').onclick = function () { save(); };
+$('editLayout').onclick = function () { editMode = !editMode; renderGroups(); };
+$('renumber').onchange = function () { renumber = $('renumber').checked; renumberChanged = true; touch(); };
+$('resetLayout').onclick = resetLayout;
+$('combineBtn').onclick = function () { combineOpen = !combineOpen; renderCombine(); if (combineOpen) $('cq').focus(); };
+$('cq').oninput = function () { clearTimeout(searchTimer); searchTimer = setTimeout(searchChannels, 250); };
+$('doCombine').onclick = combine;
+$('clearPicked').onclick = function () { picked = []; renderPicked(); searchChannels(); };
+$('autoRefresh').onchange = function () {
+  var h = parseInt($('autoRefresh').value, 10);
+  post('/api/settings', { autoRefreshHours: h }).then(function () { st.autoRefreshHours = h; }).catch(function (e) {
+    if (e.pin) failed(e); else alert(e.message);
+  });
+};
+$('add').onclick = function () { startEdit(null); };
+$('editor').onsubmit = submitEdit;
+$('editorCancel').onclick = stopEdit;
+$('typeXtream').onclick = function () { setType('XTREAM'); };
+$('typeM3u').onclick = function () { setType('M3U'); };
+$('fmtTs').onclick = function () { setFormat('ts'); };
+$('fmtHls').onclick = function () { setFormat('m3u8'); };
+</script>
+</body>
+</html>
