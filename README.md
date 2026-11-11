@@ -160,7 +160,7 @@ Built with Kotlin, Jetpack Compose, Media3 ExoPlayer, OkHttp and Coil. Minimum A
 
 ## License
 
-Copyright (C) 2026 Pedro Ferreira
+Copyright (C) 2026 NervousPanda
 
 TVDeck is free software: you can redistribute it and/or modify it under the terms of the GNU
 General Public License as published by the Free Software Foundation, either version 3 of the
